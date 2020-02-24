@@ -1,0 +1,22 @@
+{
+  "name": "sheets-sync",
+  "version": "1.0.0",
+  "description": "Syncronizes infos in csv using data from a ods file",
+  "main": "index.js",
+  "dependencies": {
+    "@stefancfuchs/utils": "^1.0.8",
+    "xlsx": "^0.15.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sheets;",
+    "ods;",
+    "csv;",
+    "data"
+  ],
+  "author": "Luciano Urgal Pando",
+  "license": "MIT"
+}
