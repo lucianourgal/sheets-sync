@@ -24,7 +24,11 @@ const utils = require('@stefancfuchs/utils');
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
                 const register = acs['D' + i] ? acs['D' + i].v : null;
-                const birth = acs['F' + i] ? acs['F' + i].w : null;
+
+                let birth = acs['F' + i] ? acs['F' + i].w : null;
+                if (acs['F' + i] && !birth.includes('/')) {
+                    birth = new Date(acs['F' + i].w);
+                }
 
                 const docCell = acs['H' + i];
                 const doc = docCell ? docCell.v : null;
@@ -34,8 +38,14 @@ const utils = require('@stefancfuchs/utils');
         }
     }
 
+    console.log(students.length, ' student records found at records spreadsheet');
+
     const studenRecordOf = (name, students) => {
         const st = students.filter(s => s.name === name);
+        if (st.length > 1) {
+            console.log('Warning: Two students have the name of ' + name);
+            return null;
+        }
         //if(st && st.length) console.log('rec found', name)
         return (st && st.length) ? st[0] : null;
     }
@@ -44,6 +54,7 @@ const utils = require('@stefancfuchs/utils');
     // Read student id cards spreadsheet
     const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
     let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
+    let studentsIdsToPrintCount = 0;
     let valuesFound = 0;
 
     for (let i = 4; i < 600; i++) {
@@ -54,6 +65,7 @@ const utils = require('@stefancfuchs/utils');
 
             const name = utils.accentFold(nameCell.v.toLowerCase().split('-')[0]).trim();
             const rec = studenRecordOf(name, students);
+            studentsIdsToPrintCount++;
 
             if (rec) {
 
@@ -61,16 +73,18 @@ const utils = require('@stefancfuchs/utils');
                 const birthCell = idCardsSheet['F' + i];
                 const registerCell = idCardsSheet['G' + i];
 
-                if (rec.doc && (!docCell || !docCell.v)) { 
-                    idCardsSheet['E'+i] = { v: rec.doc, t: 's', w: rec.doc }
+                if (rec.doc && (!docCell || !docCell.v || docCell.v.length < 5)) {
+                    idCardsSheet['E' + i] = { v: rec.doc, t: 's', w: rec.doc }
                     valuesFound++;
                     //console.log(name, 'doc', rec.doc, rec.sheet)
-                } else if (rec.birth && (!birthCell || !birthCell.v)) {
-                    idCardsSheet['F'+i] = { v: rec.birth, t: 's', w: rec.birth }
+                }
+                if (rec.birth && (!birthCell || !birthCell.v)) {
+                    idCardsSheet['F' + i] = { v: rec.birth, t: 's', w: rec.birth }
                     valuesFound++;
                     //console.log(name, 'birth', rec.birth, rec.sheet)
-                } else if (rec.register && (!registerCell || !registerCell.v)) {
-                    idCardsSheet['G'+i] = { v: rec.register, t: 's', w: rec.register }
+                }
+                if (rec.register && (!registerCell || !registerCell.v || registerCell.v.length < 6)) {
+                    idCardsSheet['G' + i] = { v: rec.register, t: 's', w: rec.register }
                     //console.log(name, 'reg', rec.register, rec.sheet)
                     valuesFound++;
                 }
@@ -81,7 +95,7 @@ const utils = require('@stefancfuchs/utils');
 
     }
 
-    console.log(valuesFound, ' values found and completed');
+    console.log(studentsIdsToPrintCount, ' student records to print, ', valuesFound, ' values found and completed');
     XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ MOD.ods')
 
 })();
