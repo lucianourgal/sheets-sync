@@ -54,8 +54,11 @@ const utils = require('@stefancfuchs/utils');
     // Read student id cards spreadsheet
     const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
     let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
+
     let studentsIdsToPrintCount = 0;
-    let valuesFound = 0;
+    let valuesFound = [];
+    const valuesToFind = [];
+    let notFoundCount = 0;
 
     for (let i = 4; i < 600; i++) {
 
@@ -67,36 +70,67 @@ const utils = require('@stefancfuchs/utils');
             const rec = studenRecordOf(name, students);
             studentsIdsToPrintCount++;
 
-            if (rec) {
+            const docCell = idCardsSheet['E' + i];
+            const birthCell = idCardsSheet['F' + i];
+            const registerCell = idCardsSheet['G' + i];
 
-                const docCell = idCardsSheet['E' + i];
-                const birthCell = idCardsSheet['F' + i];
-                const registerCell = idCardsSheet['G' + i];
-
-                if (rec.doc && (!docCell || !docCell.v || docCell.v.length < 5)) {
+            if ((!docCell || !docCell.v || docCell.v.length < 5)) {
+                valuesToFind.push('doc');
+                if (rec && rec.doc) {
                     idCardsSheet['E' + i] = { v: rec.doc, t: 's', w: rec.doc }
-                    valuesFound++;
+                    valuesFound.push('doc');
                     //console.log(name, 'doc', rec.doc, rec.sheet)
                 }
-                if (rec.birth && (!birthCell || !birthCell.v)) {
+            }
+            if ((!birthCell || !birthCell.v)) {
+                valuesToFind.push('birth');
+                if (rec && rec.birth) {
                     idCardsSheet['F' + i] = { v: rec.birth, t: 's', w: rec.birth }
-                    valuesFound++;
+                    valuesFound.push('birth');
                     //console.log(name, 'birth', rec.birth, rec.sheet)
                 }
-                if (rec.register && (!registerCell || !registerCell.v || registerCell.v.length < 6)) {
+            }
+            if (!registerCell || !registerCell.v || registerCell.v.length < 6) {
+                valuesToFind.push('register');
+                if (rec && rec.register) {
                     idCardsSheet['G' + i] = { v: rec.register, t: 's', w: rec.register }
                     //console.log(name, 'reg', rec.register, rec.sheet)
-                    valuesFound++;
+                    valuesFound.push('register');
                 }
+            }
 
+            if (!rec) {
+                notFoundCount++;
+                console.log('Warning: "' + nameCell.v + '" not found! ');
             }
 
         }
 
     }
 
-    console.log(studentsIdsToPrintCount, ' student records to print, ', valuesFound, ' values found and completed');
-    XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ MOD.ods')
+    const valuesToFindCount = valuesToFind.length;
+    const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
+    const regToFindCount = valuesToFind.filter(cur => cur === 'register').length;
+    const birthToFindCount = valuesToFind.filter(cur => cur === 'birth').length;
+
+    const valuesFoundCount = valuesFound.length;
+    const docFoundCount = valuesFound.filter(cur => cur === 'doc').length;
+    const regFoundCount = valuesFound.filter(cur => cur === 'register').length;
+    const birthFoundCount = valuesFound.filter(cur => cur === 'birth').length;
+
+    const foundCount = studentsIdsToPrintCount - notFoundCount;
+
+    console.log('\n' + studentsIdsToPrintCount + ' student records to print id cards, ' + foundCount + ' students found (' +
+        (100 * foundCount / studentsIdsToPrintCount).toFixed(1) + ' %), ' + notFoundCount + ' not found');
+    console.log(valuesToFindCount + ' values to be find. ' + valuesFoundCount +
+        ' (' + (100 * valuesFoundCount / valuesToFindCount).toFixed(1) + ' %) values found and completed\n');
+
+    console.log('Missing values count: \nDoc: ' + docToFindCount + '\nRegister: ' +
+        regToFindCount + '\nBirth: ' + birthToFindCount + '\n');
+    console.log('Found values count: \nDoc: ' + docFoundCount + '\nRegister: ' +
+        regFoundCount + '\nBirth: ' + birthFoundCount + '\n');
+
+    XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ MOD.ods');
 
 })();
 
@@ -108,7 +142,6 @@ Doc: E4 - ?
 Birth F4 - ?
 Register: G4 - ?
 */
-
 
 
 /* Student records spreadsheet:
