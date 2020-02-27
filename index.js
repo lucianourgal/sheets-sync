@@ -56,7 +56,7 @@ const utils = require('@stefancfuchs/utils');
         }
     }
 
-    console.log(students.length, ' student records found at records spreadsheet');
+    console.log(students.length + ' active student records found at records spreadsheet\n');
 
     const studenRecordOf = (name, students) => {
         const st = students.filter(s => s.name === name);
@@ -76,7 +76,7 @@ const utils = require('@stefancfuchs/utils');
     let studentsIdsToPrintCount = 0;
     let valuesFound = [];
     const valuesToFind = [];
-    let notFoundCount = 0;
+    let notFoundNames = [];
 
     for (let i = 4; i < 600; i++) {
 
@@ -118,14 +118,27 @@ const utils = require('@stefancfuchs/utils');
             }
 
             if (!rec) {
-                notFoundCount++;
-                console.log('Warning: "' + nameCell.v + '" not found! ');
+                const split = nameCell.v.split('-');
+                let invertedName = split.reverse().join(' - ');
+                notFoundNames.push(invertedName.trim());
+                //console.log('Warning: "' + nameCell.v + '" not found! ');
             }
 
         }
 
     }
 
+    const notFoundCount = notFoundNames.length;
+    notFoundNames = notFoundNames.sort();
+
+    if(notFoundCount) {
+        console.log();
+    }
+    for(let x=0;x<notFoundCount;x++) {
+        console.log('Not found: "' + notFoundNames[x] + '"');
+    }
+
+    
     const valuesToFindCount = valuesToFind.length;
     const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
     const regToFindCount = valuesToFind.filter(cur => cur === 'register').length;
@@ -146,7 +159,7 @@ const utils = require('@stefancfuchs/utils');
     console.log('Missing values count: \nDoc: ' + docToFindCount + '\nRegister: ' +
         regToFindCount + '\nBirth: ' + birthToFindCount + '\n');
     console.log('Found values count: \nDoc: ' + docFoundCount + '\nRegister: ' +
-        regFoundCount + '\nBirth: ' + birthFoundCount + '\n');
+        regFoundCount + '\nBirth: ' + birthFoundCount);
 
     XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ MOD.ods');
 
