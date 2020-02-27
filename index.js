@@ -4,7 +4,7 @@ const natural = require('natural');
 
 const stringSimilarToAny = (input, arr) => {
 
-    const minScore = 0.87;
+    const minScore = 0.82;
     let highestScore = 0;
 
     const highestMatchString = arr
@@ -16,12 +16,35 @@ const stringSimilarToAny = (input, arr) => {
                 return cur;
             }
             return prev;
-        });
+        }, null);
 
     if (highestScore >= minScore) {
         return highestMatchString;
     }
     return null;
+}
+
+const tagToTab = (tag) => {
+
+    tag = tag.trim();
+    let change = {
+        'IMEC20': 'MEC INT 2020',
+        'ELM19': 'EltMec2019',
+        'AUT20': 'Aut 2020',
+        'AUT19': 'Aut 2019',
+        'CER20': 'Cer 2020',
+        'PRJ20': 'Adm 2020 -PROEJA',
+        'ADM20': 'Adm2020',
+        'AGRO20': 'Agro 2020',
+        'MEC20': 'Mec sub 2020',
+
+        'MAT20': 'to be defined',
+        'ENG20': 'to be defined',
+    };
+
+    const tab = change[tag];
+    if(!tab) console.log('tag not found:', tag );
+    return tab;
 }
 
 
@@ -92,8 +115,6 @@ const stringSimilarToAny = (input, arr) => {
         return (st && st.length) ? st[0] : null;
     }
 
-    const studentsAvailableNames = students.map(cur => cur.name);
-
     // Read student id cards spreadsheet
     const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
     let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
@@ -146,14 +167,18 @@ const stringSimilarToAny = (input, arr) => {
 
             if (!rec) {
                 const split = nameCell.v.split('-');
+                const tab = tagToTab(split[1]);
+                
                 let invertedName = split.reverse().join(' - ');
-
                 notFoundNames.push(invertedName.trim());
-                const similarName = stringSimilarToAny(name, studentsAvailableNames);
+                const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
+                //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab)
+
+                const similarName = stringSimilarToAny(name, filteredStudents.map(cur => cur.name));
                 let similarCompleted = null;
-                for(let s=0;s<students.length;s++) {
-                    if(students[s].name === similarName) {
-                        similarCompleted = students[s].nameUntreated + ' - ' + students[s].sheet;
+                for(let s=0;s<filteredStudents.length;s++) {
+                    if(filteredStudents[s].name === similarName) {
+                        similarCompleted = filteredStudents[s].nameUntreated + ' - ' + filteredStudents[s].sheet;
                     }
                 }
 
