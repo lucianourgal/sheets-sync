@@ -4,7 +4,7 @@ const natural = require('natural');
 
 const stringSimilarToAny = (input, arr) => {
 
-    const minScore = 0.82;
+    const minScore = 0.80;
     let highestScore = 0;
 
     const highestMatchString = arr
@@ -27,7 +27,7 @@ const stringSimilarToAny = (input, arr) => {
 const tagToTab = (tag) => {
 
     tag = tag.trim();
-    let change = {
+    const change = {
         'IMEC20': 'MEC INT 2020',
         'ELM19': 'EltMec2019',
         'AUT20': 'Aut 2020',
@@ -37,14 +37,24 @@ const tagToTab = (tag) => {
         'ADM20': 'Adm2020',
         'AGRO20': 'Agro 2020',
         'MEC20': 'Mec sub 2020',
+        'ELT20': 'Elet 2020',
+        'AGRO20': 'Agro Sup 2020',
 
-        'MAT20': 'to be defined',
-        'ENG20': 'to be defined',
+        'MAT20': 'Mat 2020',
+        'ENG20': 'Eng Elet 2020',
     };
 
     const tab = change[tag];
-    if(!tab) console.log('tag not found:', tag );
+    //if (!tab) console.log('tag not found:', tag);
     return tab;
+}
+
+const capStart = (str) => {
+    const split = str.split(' ');
+    for(let p=0;p<split.length;p++) {
+        split[p] = split[p].slice(0, 1).toUpperCase() + split[p].slice(1).toLowerCase();
+    }
+    return split.join(' ');
 }
 
 
@@ -54,6 +64,7 @@ const tagToTab = (tag) => {
     // Read Student records spreadSheet
     const studentRecords = XLSX.readFile('assets/HISTÓRICO E CONTATO ALUNOS ATIVOS.ods');
     const sheetNames = studentRecords.SheetNames;
+    //console.log(sheetNames);
     const sheets = studentRecords.Sheets;
     const students = [];
 
@@ -85,7 +96,8 @@ const tagToTab = (tag) => {
             const nameCell = acs['B' + i];
             const statusCell = acs['C' + i];
 
-            if (nameCell && statusCell && statusCell.v === 'ATIVO') {
+            if (nameCell && statusCell && statusCell.v === 'ATIVO' ||
+                (nameCell && !(statusCell && statusCell.v) && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020'))) { // Temp fix due incomplete tabs at .ods file
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
                 const register = acs[regCollumn + i] ? acs[regCollumn + i].v : null;
@@ -133,7 +145,11 @@ const tagToTab = (tag) => {
         if (nameCell && nameCell.v && nameCell.v.includes('-')) {
 
             const name = utils.accentFold(nameCell.v.toLowerCase().split('-')[0]).trim();
-            const rec = studenRecordOf(name, students);
+            const tab = tagToTab(nameCell.v.split('-')[1]);
+            const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
+            //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab);
+
+            const rec = studenRecordOf(name, filteredStudents);
             studentsIdsToPrintCount++;
 
             const docCell = idCardsSheet['E' + i];
@@ -167,18 +183,15 @@ const tagToTab = (tag) => {
 
             if (!rec) {
                 const split = nameCell.v.split('-');
-                const tab = tagToTab(split[1]);
-                
+
                 let invertedName = split.reverse().join(' - ');
                 notFoundNames.push(invertedName.trim());
-                const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
-                //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab)
 
                 const similarName = stringSimilarToAny(name, filteredStudents.map(cur => cur.name));
                 let similarCompleted = null;
-                for(let s=0;s<filteredStudents.length;s++) {
-                    if(filteredStudents[s].name === similarName) {
-                        similarCompleted = filteredStudents[s].nameUntreated + ' - ' + filteredStudents[s].sheet;
+                for (let s = 0; s < filteredStudents.length; s++) {
+                    if (filteredStudents[s].name === similarName) {
+                        similarCompleted = capStart(filteredStudents[s].nameUntreated) + '" - ' + filteredStudents[s].sheet;
                     }
                 }
 
@@ -194,7 +207,7 @@ const tagToTab = (tag) => {
     notFoundNames = notFoundNames.map((cur, i) => {
         let name = cur;
         if (didYouMean[i]) {
-            name = name + '. Did you mean "' + didYouMean[i] + '"?';
+            name = name + '. Did you mean "' + didYouMean[i] + '?';
         }
         return name;
     });
