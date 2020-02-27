@@ -10,10 +10,28 @@ const utils = require('@stefancfuchs/utils');
     const sheets = studentRecords.Sheets;
     const students = [];
 
+    const findCollumn = (acs, name, defaultColummn) => {
+        const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        let c = defaultColummn;
+        for (let l = 0; l < letters.length; l++) {
+            const check = letters[l];
+            if (acs[check + '2'] && acs[check + '2'].v === name) {
+                c = check;
+            }
+        }
+        return c;
+    }
+
     console.log(sheetNames.length + ' sheets in students records spreadsheet');
 
     for (let sheet of sheetNames) {
         const acs = sheets[sheet];
+
+        // find out which collumns has doc/RG values
+        let docCollumn = findCollumn(acs, 'RG', 'H'); 
+        let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F'); 
+        let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
+        //console.log(sheet, docCollumn, birthCollumn, regCollumn);
 
         for (let i = 3; i < 50; i++) {
 
@@ -23,14 +41,14 @@ const utils = require('@stefancfuchs/utils');
             if (nameCell && statusCell && statusCell.v === 'ATIVO') {
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
-                const register = acs['D' + i] ? acs['D' + i].v : null;
+                const register = acs[regCollumn + i] ? acs[regCollumn + i].v : null;
 
-                let birth = acs['F' + i] ? acs['F' + i].w : null;
-                if (acs['F' + i] && !birth.includes('/')) {
-                    birth = new Date(acs['F' + i].w);
+                let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
+                if (acs[birthCollumn + i] && !birth.includes('/')) {
+                    birth = new Date(acs[birthCollumn + i].w);
                 }
 
-                const docCell = acs['H' + i];
+                const docCell = acs[docCollumn + i];
                 const doc = docCell ? docCell.v : null;
 
                 students.push({ name, register, birth, doc, sheet });
