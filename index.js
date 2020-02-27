@@ -1,5 +1,29 @@
 const XLSX = require('xlsx');
 const utils = require('@stefancfuchs/utils');
+const natural = require('natural');
+
+const stringSimilarToAny = (input, arr) => {
+
+    const minScore = 0.87;
+    let highestScore = 0;
+
+    const highestMatchString = arr
+        .reduce((prev, cur) => {
+            const curNorm = utils.accentFold(cur.toLowerCase().trim())
+            const score = natural.JaroWinklerDistance(utils.accentFold(input).toLowerCase().trim(), curNorm)
+            if (score > highestScore) {
+                highestScore = score
+                return cur;
+            }
+            return prev;
+        });
+
+    if (highestScore >= minScore) {
+        return highestMatchString;
+    }
+    return null;
+}
+
 
 
 (async () => {
@@ -28,8 +52,8 @@ const utils = require('@stefancfuchs/utils');
         const acs = sheets[sheet];
 
         // find out which collumns has doc/RG values
-        let docCollumn = findCollumn(acs, 'RG', 'H'); 
-        let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F'); 
+        let docCollumn = findCollumn(acs, 'RG', 'H');
+        let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
         let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
         //console.log(sheet, docCollumn, birthCollumn, regCollumn);
 
@@ -51,7 +75,7 @@ const utils = require('@stefancfuchs/utils');
                 const docCell = acs[docCollumn + i];
                 const doc = docCell ? docCell.v : null;
 
-                students.push({ name, register, birth, doc, sheet });
+                students.push({ name, register, birth, doc, sheet, nameUntreated: nameCell.v });
             }
         }
     }
@@ -68,6 +92,7 @@ const utils = require('@stefancfuchs/utils');
         return (st && st.length) ? st[0] : null;
     }
 
+    const studentsAvailableNames = students.map(cur => cur.name);
 
     // Read student id cards spreadsheet
     const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
@@ -76,7 +101,9 @@ const utils = require('@stefancfuchs/utils');
     let studentsIdsToPrintCount = 0;
     let valuesFound = [];
     const valuesToFind = [];
+
     let notFoundNames = [];
+    const didYouMean = [];
 
     for (let i = 4; i < 600; i++) {
 
@@ -120,7 +147,17 @@ const utils = require('@stefancfuchs/utils');
             if (!rec) {
                 const split = nameCell.v.split('-');
                 let invertedName = split.reverse().join(' - ');
+
                 notFoundNames.push(invertedName.trim());
+                const similarName = stringSimilarToAny(name, studentsAvailableNames);
+                let similarCompleted = null;
+                for(let s=0;s<students.length;s++) {
+                    if(students[s].name === similarName) {
+                        similarCompleted = students[s].nameUntreated + ' - ' + students[s].sheet;
+                    }
+                }
+
+                didYouMean.push(similarCompleted);
                 //console.log('Warning: "' + nameCell.v + '" not found! ');
             }
 
@@ -129,16 +166,23 @@ const utils = require('@stefancfuchs/utils');
     }
 
     const notFoundCount = notFoundNames.length;
+    notFoundNames = notFoundNames.map((cur, i) => {
+        let name = cur;
+        if (didYouMean[i]) {
+            name = name + '. Did you mean "' + didYouMean[i] + '"?';
+        }
+        return name;
+    });
     notFoundNames = notFoundNames.sort();
 
-    if(notFoundCount) {
+    if (notFoundCount) {
         console.log();
     }
-    for(let x=0;x<notFoundCount;x++) {
-        console.log('Not found: "' + notFoundNames[x] + '"');
+    for (let x = 0; x < notFoundCount; x++) {
+        console.log('Not found: ' + notFoundNames[x]);
     }
 
-    
+
     const valuesToFindCount = valuesToFind.length;
     const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
     const regToFindCount = valuesToFind.filter(cur => cur === 'register').length;

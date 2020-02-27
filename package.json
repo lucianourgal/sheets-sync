@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "@stefancfuchs/utils": "^1.0.8",
+    "natural": "^0.6.3",
     "xlsx": "^0.15.5"
   },
   "devDependencies": {},
