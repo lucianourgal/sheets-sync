@@ -3,6 +3,11 @@ const utils = require('@stefancfuchs/utils');
 const natural = require('natural');
 const readlineSync = require('readline-sync');
 
+/**
+ * Giver a reference string and a array of strings, returns the string from arr which is more similar to the reference string
+ * @param input reference string
+ * @param arr array of strings you want to find the most similar to input string
+ */
 const stringSimilarToAny = (input, arr) => {
 
     const minScore = 0.80;
@@ -25,6 +30,10 @@ const stringSimilarToAny = (input, arr) => {
     return null;
 }
 
+/**
+ * Maps tag files to tabs of external spreadsheet
+ * @param tag file tag string
+ */
 const tagToTab = (tag) => {
 
     tag = tag.trim();
@@ -50,6 +59,10 @@ const tagToTab = (tag) => {
     return tab;
 }
 
+/**
+ * Standartizes first letters of each word as UpperCase and the rest as lowerCase
+ * @param str initial string
+ */
 const capStart = (str) => {
     const split = str.split(' ');
     for (let p = 0; p < split.length; p++) {
@@ -59,13 +72,13 @@ const capStart = (str) => {
 }
 
 
+// Main function starts here
 
 (async () => {
 
-    // Read Student records spreadSheet
+    // Read student records spreadSheet (external spredsheet)
     const studentRecords = XLSX.readFile('assets/HISTÓRICO E CONTATO ALUNOS ATIVOS.ods');
     const sheetNames = studentRecords.SheetNames;
-    //console.log(sheetNames);
     const sheets = studentRecords.Sheets;
 
     const students = [];
@@ -88,7 +101,7 @@ const capStart = (str) => {
     for (let sheet of sheetNames) {
         const acs = sheets[sheet];
 
-        // find out which collumns has doc/RG values
+        // find out which collumns has doc/RG, birth date and registy values
         let docCollumn = findCollumn(acs, 'RG', 'H');
         let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
         let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
@@ -99,7 +112,7 @@ const capStart = (str) => {
             const nameCell = acs['B' + i];
             const statusCell = acs['C' + i];
 
-            if (nameCell) {
+            if (nameCell && nameCell.v) { // if this line has text at the name collumn
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
                 const register = acs[regCollumn + i] ? acs[regCollumn + i].v : null;
@@ -111,14 +124,14 @@ const capStart = (str) => {
                 }
                 const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
 
-                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab };
+                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab }; // Creates student object
 
                 if (status === 'ATIVO' ||
-                    nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at .ods file
-                        
-                    students.push(newStudent);
+                    nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at external .ods file
+
+                    students.push(newStudent); // Active students only
                 } else {
-                    notActiveStudents.push(newStudent);
+                    notActiveStudents.push(newStudent); // It can be a student of not "ATIVO" status
                 }
             }
         }
@@ -127,6 +140,12 @@ const capStart = (str) => {
     console.log(students.length + ' active student records found at records spreadsheet\n');
     // console.log(notActiveStudents.length + ' possible students records');
 
+    /**
+     * Finds register with the same name in both local and external spredsheets 
+     * @param name student to look for
+     * @param students students array - maybe filtered by course, maybe active only, maybe inactive only
+     * @returns student object
+     */
     const studenRecordOf = (name, students) => {
         const st = students.filter(s => s.name === name);
         if (st.length > 1) {
@@ -186,12 +205,12 @@ const capStart = (str) => {
             const birthCell = idCardsSheet['F' + i];
             const registerCell = idCardsSheet['G' + i];
 
+            // Completes data at local spreedsheet if data is missing and external spreedsheet has this data
             if ((!docCell || !docCell.v || docCell.v.length < 5)) {
                 valuesToFind.push('doc');
                 if (rec && rec.doc) {
                     idCardsSheet['E' + i] = { v: rec.doc, t: 's', w: rec.doc }
                     valuesFound.push('doc');
-                    //console.log(name, 'doc', rec.doc, rec.sheet)
                 }
             }
             if ((!birthCell || !birthCell.v)) {
@@ -199,14 +218,12 @@ const capStart = (str) => {
                 if (rec && rec.birth) {
                     idCardsSheet['F' + i] = { v: rec.birth, t: 's', w: rec.birth }
                     valuesFound.push('birth');
-                    //console.log(name, 'birth', rec.birth, rec.sheet)
                 }
             }
             if (!registerCell || !registerCell.v || registerCell.v.length < 6) {
                 valuesToFind.push('register');
                 if (rec && rec.register) {
                     idCardsSheet['G' + i] = { v: rec.register, t: 's', w: rec.register }
-                    //console.log(name, 'reg', rec.register, rec.sheet)
                     valuesFound.push('register');
                 }
             }
@@ -217,6 +234,12 @@ const capStart = (str) => {
                 let invertedName = split.reverse().join(' - ');
                 notFoundNames.push(invertedName.trim());
 
+                /**
+                 * Finds register with the similar name in both local and external spredsheets (similar code of studenRecordOf)
+                 * @param name student to look for
+                 * @param students students array - maybe filtered by course, maybe active only, maybe inactive only
+                 * @returns string to inform this code user about possible match
+                 */
                 const findSimilarName = (fName, fStudents) => {
                     const fSimilarName = stringSimilarToAny(fName, fStudents.map(cur => cur.name));
                     let fSimilarCompleted = null;
@@ -234,7 +257,6 @@ const capStart = (str) => {
                 }
 
                 didYouMean.push(similarCompleted);
-                //console.log('Warning: "' + nameCell.v + '" not found! ');
             }
 
         }
@@ -242,6 +264,8 @@ const capStart = (str) => {
     }
 
     const notFoundCount = notFoundNames.length;
+    // Gives sugestions of matches, since it could be erros like typos,
+    // missing last names or students in different courses in each spreadsheet
     notFoundNames = notFoundNames.map((cur, i) => {
         let name = cur;
         if (didYouMean[i]) {
