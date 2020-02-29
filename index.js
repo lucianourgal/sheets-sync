@@ -182,14 +182,15 @@ const capStart = (str) => {
             //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab);
 
             let rec = studenRecordOf(name, filteredStudents);
-            if (!rec) {
+
+            if (!rec) { // If no match was found using exact name match at expected tab, tries using all other tabs data
+
                 const maybeMatch = studenRecordOf(name, students); // Student match from unexpected course tab
 
                 if (maybeMatch) {
 
                     // Asks user if it should use this match data
                     const response = readlineSync.question("Use '" + maybeMatch.nameWithTab + "' info for '" + capStart(nameCell.v) + "'?  (Y/N)  __");
-
                     if (response === 'y' || response === 'Y') {
                         rec = maybeMatch;
                         console.log('"' + capStart(nameCell.v) + '" info completed!\n');
@@ -228,7 +229,8 @@ const capStart = (str) => {
                 }
             }
 
-            if (!rec) {
+            if (!rec) { // If no match was found for this student
+
                 const split = nameCell.v.split('-');
 
                 let invertedName = split.reverse().join(' - ');
@@ -280,7 +282,7 @@ const capStart = (str) => {
     });
     notFoundNames = notFoundNames.sort();
 
-    if (notFoundCount) {
+    if (notFoundCount) { // Prints not found cases to console
         console.log();
         for (let x = 0; x < notFoundCount; x++) {
             console.log('Not found: ' + notFoundNames[x]);
@@ -309,7 +311,7 @@ const capStart = (str) => {
     console.log('Found values count: \nDoc: ' + docFoundCount + '\nRegister: ' +
         regFoundCount + '\nBirth: ' + birthFoundCount);
 
-    XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ MOD.ods');
+    XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ COMPLETED.ods');
 
 })();
 

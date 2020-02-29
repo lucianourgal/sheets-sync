@@ -22,7 +22,7 @@ https://www.npmjs.com/package/readline-sync <br>
 # Main puporse steps 
 - Take pictures of students and keep files with its original names <br>
 - Have a spreedsheet #1 relating DSC number and "Student Name - $COURSE_$YEAR" <br>
-- Use [this-project](https://github.com/lucianourgal/sheets-sync) to complete spreedsheet #1 infos using the students spreedsheet provided by the academic secretariat <br>
+- Use [sheets-sync](https://github.com/lucianourgal/sheets-sync) to complete spreedsheet #1 infos using the students spreedsheet provided by the academic secretariat <br>
 - Use [Format_Factory_Software](https://formatfactory.en.uptodown.com/windows) to resize images to max ~2000px height for later face recognition <br>
 - Use [centralize-portraits](https://github.com/lucianourgal/centralize-portraits) project to centralize, rename and sort pictures by course/tag <br>
 - Sorted folders can be used to have students by course/tag file sorting <br>
