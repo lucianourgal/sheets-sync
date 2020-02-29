@@ -51,7 +51,7 @@ const tagToTab = (tag) => {
 
 const capStart = (str) => {
     const split = str.split(' ');
-    for(let p=0;p<split.length;p++) {
+    for (let p = 0; p < split.length; p++) {
         split[p] = split[p].slice(0, 1).toUpperCase() + split[p].slice(1).toLowerCase();
     }
     return split.join(' ');
@@ -66,7 +66,9 @@ const capStart = (str) => {
     const sheetNames = studentRecords.SheetNames;
     //console.log(sheetNames);
     const sheets = studentRecords.Sheets;
+
     const students = [];
+    const notActiveStudents = [];
 
     const findCollumn = (acs, name, defaultColummn) => {
         const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J'];
@@ -96,26 +98,32 @@ const capStart = (str) => {
             const nameCell = acs['B' + i];
             const statusCell = acs['C' + i];
 
-            if (nameCell && statusCell && statusCell.v === 'ATIVO' ||
-                (nameCell && !(statusCell && statusCell.v) && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020'))) { // Temp fix due incomplete tabs at .ods file
+            if (nameCell) {
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
                 const register = acs[regCollumn + i] ? acs[regCollumn + i].v : null;
-
+                const doc = acs[docCollumn + i] ? acs[docCollumn + i].v : null;
+                const status = statusCell && statusCell.v;
                 let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
                 if (acs[birthCollumn + i] && !birth.includes('/')) {
                     birth = new Date(acs[birthCollumn + i].w);
                 }
 
-                const docCell = acs[docCollumn + i];
-                const doc = docCell ? docCell.v : null;
+                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status };
 
-                students.push({ name, register, birth, doc, sheet, nameUntreated: nameCell.v });
+                if (status === 'ATIVO' ||
+                    nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at .ods file
+
+                    students.push(newStudent);
+                } else {
+                    notActiveStudents.push(newStudent);
+                }
             }
         }
     }
 
     console.log(students.length + ' active student records found at records spreadsheet\n');
+    // console.log(notActiveStudents.length + ' possible students records');
 
     const studenRecordOf = (name, students) => {
         const st = students.filter(s => s.name === name);
@@ -123,7 +131,7 @@ const capStart = (str) => {
             console.log('Warning: Two students have the name of ' + name);
             return null;
         }
-        //if(st && st.length) console.log('rec found', name)
+        //if(st && st.length) console.log('rec found', name);
         return (st && st.length) ? st[0] : null;
     }
 
@@ -152,7 +160,7 @@ const capStart = (str) => {
             const rec = studenRecordOf(name, filteredStudents);
             studentsIdsToPrintCount++;
 
-            const docCell = idCardsSheet['E' + i];
+            const docCell = idCardsSheet['E' + i]; // This sheet has defined collumns since its controlled by me
             const birthCell = idCardsSheet['F' + i];
             const registerCell = idCardsSheet['G' + i];
 
@@ -187,12 +195,20 @@ const capStart = (str) => {
                 let invertedName = split.reverse().join(' - ');
                 notFoundNames.push(invertedName.trim());
 
-                const similarName = stringSimilarToAny(name, filteredStudents.map(cur => cur.name));
-                let similarCompleted = null;
-                for (let s = 0; s < filteredStudents.length; s++) {
-                    if (filteredStudents[s].name === similarName) {
-                        similarCompleted = capStart(filteredStudents[s].nameUntreated) + '" - ' + filteredStudents[s].sheet;
+                const findSimilarName = (fName, fStudents) => {
+                    const fSimilarName = stringSimilarToAny(fName, fStudents.map(cur => cur.name));
+                    let fSimilarCompleted = null;
+                    for (let s = 0; s < fStudents.length; s++) {
+                        if (fStudents[s].name === fSimilarName) {
+                            fSimilarCompleted = capStart(fStudents[s].nameUntreated) + '" - ' + fStudents[s].sheet;
+                        }
                     }
+                    return fSimilarCompleted;
+                }
+
+                let similarCompleted = findSimilarName(name, filteredStudents); // Looks for similar names at the same course
+                if(!similarCompleted) {
+                    similarCompleted = findSimilarName(name, students); // Looks for similar names between all courses
                 }
 
                 didYouMean.push(similarCompleted);
@@ -208,6 +224,11 @@ const capStart = (str) => {
         let name = cur;
         if (didYouMean[i]) {
             name = name + '. Did you mean "' + didYouMean[i] + '?';
+        } else { // look in inactive students
+            const inactiveRecord = studenRecordOf(name, notActiveStudents);
+            if (inactiveRecord) {
+                name = name + '. Status: ' + inactiveRecord.status + ' (' + inactiveRecord.sheet + ')';
+            }
         }
         return name;
     });
@@ -215,11 +236,10 @@ const capStart = (str) => {
 
     if (notFoundCount) {
         console.log();
+        for (let x = 0; x < notFoundCount; x++) {
+            console.log('Not found: ' + notFoundNames[x]);
+        }
     }
-    for (let x = 0; x < notFoundCount; x++) {
-        console.log('Not found: ' + notFoundNames[x]);
-    }
-
 
     const valuesToFindCount = valuesToFind.length;
     const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
