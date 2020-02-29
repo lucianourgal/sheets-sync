@@ -1,6 +1,7 @@
 const XLSX = require('xlsx');
 const utils = require('@stefancfuchs/utils');
 const natural = require('natural');
+const readlineSync = require('readline-sync');
 
 const stringSimilarToAny = (input, arr) => {
 
@@ -108,12 +109,13 @@ const capStart = (str) => {
                 if (acs[birthCollumn + i] && !birth.includes('/')) {
                     birth = new Date(acs[birthCollumn + i].w);
                 }
+                const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
 
-                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status };
+                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab };
 
                 if (status === 'ATIVO' ||
                     nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at .ods file
-
+                        
                     students.push(newStudent);
                 } else {
                     notActiveStudents.push(newStudent);
@@ -135,7 +137,10 @@ const capStart = (str) => {
         return (st && st.length) ? st[0] : null;
     }
 
+    // PART 2
     // Read student id cards spreadsheet
+    //
+
     const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
     let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
 
@@ -157,7 +162,24 @@ const capStart = (str) => {
             const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
             //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab);
 
-            const rec = studenRecordOf(name, filteredStudents);
+            let rec = studenRecordOf(name, filteredStudents);
+            if (!rec) {
+                const maybeMatch = studenRecordOf(name, students); // Student match from unexpected course tab
+
+                if (maybeMatch) {
+
+                    // Asks user if it should use this match data
+                    const response = readlineSync.question("Use '" + maybeMatch.nameWithTab + "' info for '" + capStart(nameCell.v) + "'?  (Y/N)  __");
+
+                    if (response === 'y' || response === 'Y') {
+                        rec = maybeMatch;
+                        console.log('"' + capStart(nameCell.v) + '" info completed!\n');
+                    } else {
+                        console.log('"' + capStart(nameCell.v) + '" skipped\n');
+                    }
+                }
+            }
+
             studentsIdsToPrintCount++;
 
             const docCell = idCardsSheet['E' + i]; // This sheet has defined collumns since its controlled by me
@@ -207,7 +229,7 @@ const capStart = (str) => {
                 }
 
                 let similarCompleted = findSimilarName(name, filteredStudents); // Looks for similar names at the same course
-                if(!similarCompleted) {
+                if (!similarCompleted) {
                     similarCompleted = findSimilarName(name, students); // Looks for similar names between all courses
                 }
 

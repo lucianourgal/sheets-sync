@@ -3,9 +3,10 @@
 
 # Usefull links
 https://www.npmjs.com/package/xlsx <br>
+https://www.npmjs.com/package/readline-sync <br>
 
 
 # Usage
 Put .ods spreadsheet files in assets folder <br>
 npm install <br>
-node index.ts <br>
+node index.js <br>
