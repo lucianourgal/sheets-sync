@@ -85,7 +85,7 @@ const capStart = (str) => {
     const notActiveStudents = [];
 
     const findCollumn = (acs, name, defaultColummn) => {
-        const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
         let c = defaultColummn;
         for (let l = 0; l < letters.length; l++) {
             const check = letters[l];
@@ -99,12 +99,24 @@ const capStart = (str) => {
     console.log(sheetNames.length + ' sheets in students records spreadsheet');
 
     for (let sheet of sheetNames) {
+
         const acs = sheets[sheet];
+        const getVal = (acs, cell) => acs[cell] ? acs[cell].v : null;
 
         // find out which collumns has doc/RG, birth date and registy values
         let docCollumn = findCollumn(acs, 'RG', 'H');
         let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
         let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
+
+        let mailCollumn = findCollumn(acs, 'E-MAIL', 'J');
+        let phone1Collumn = findCollumn(acs, 'TELEFONE 1', 'K');
+        let phone2Collumn = findCollumn(acs, 'TELEFONE 2', 'L');
+        let phone3Collumn = findCollumn(acs, 'CEL. RESPONSÁVEL', 'M');
+        let parent1Collumn = findCollumn(acs, 'MÃE', 'N');
+        let parent2Collumn = findCollumn(acs, 'PAI', 'O');
+        let entranceAtCollumn = findCollumn(acs, 'CHAMADA', 'P');
+        let entranceKindCollumn = findCollumn(acs, 'COTA', 'Q');
+
         //console.log(sheet, docCollumn, birthCollumn, regCollumn);
 
         for (let i = 3; i < 50; i++) {
@@ -115,16 +127,27 @@ const capStart = (str) => {
             if (nameCell && nameCell.v) { // if this line has text at the name collumn
 
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
-                const register = acs[regCollumn + i] ? acs[regCollumn + i].v : null;
-                const doc = acs[docCollumn + i] ? acs[docCollumn + i].v : null;
+                const register = getVal(acs, regCollumn + i);
+                const doc = getVal(acs, docCollumn + i);
                 const status = statusCell && statusCell.v;
                 let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
                 if (acs[birthCollumn + i] && !birth.includes('/')) {
                     birth = new Date(acs[birthCollumn + i].w);
                 }
-                const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
+                const email = getVal(acs, mailCollumn + i);
+                const phone1 = getVal(acs, phone1Collumn + i);
+                const phone2 = getVal(acs, phone2Collumn + i);
+                const phone3 = getVal(acs, phone3Collumn + i);
+                const parent1 = getVal(acs, parent1Collumn + i);
+                const parent2 = getVal(acs, parent2Collumn + i);
+                const entranceAt = getVal(acs, entranceAtCollumn + i);
+                const entranceKind = getVal(acs, entranceKindCollumn + i);
 
-                const newStudent = { name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab }; // Creates student object
+                const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
+                const newStudent = {
+                    name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab,
+                    email, phone1, phone2, phone3, parent1, parent2, entranceAt, entranceKind
+                }; // Creates student object
 
                 if (status === 'ATIVO' ||
                     nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at external .ods file
