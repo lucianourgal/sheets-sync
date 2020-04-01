@@ -348,7 +348,7 @@ const createStudentDefaulForms = true;
         const selectedSheets = ['Aut 2020', 'MEC INT 2020',
             'Adm2020', 'Cer 2020', 'Mec sub 2020',
             'Eng Elet 2020', 'Agro Sup 2020'];
-        const model = XLSX.readFile('assets/Student default form.ods');
+        const model = XLSX.readFile('assets/Student default form.xlsx', { cellStyles: true, type: 'file', cellHTML: true, dense: true, sheetStubs: true, });
         if (!fs.existsSync('outputs')) {
             fs.mkdirSync('outputs');
         }
@@ -362,7 +362,8 @@ const createStudentDefaulForms = true;
 
             for (const student of classStudents) {
 
-                const dataSheet = model.Sheets['Dados'];
+                const newSheet = { ...model };
+                const dataSheet = newSheet.Sheets['Dados'];
                 dataSheet['A2'] = { v: student.name, t: 's', w: student.name } // name
                 dataSheet['B2'] = { v: student.birth, t: 's', w: student.birth } //birth
                 dataSheet['C2'] = { v: student.email, t: 's', w: student.email } //mail
@@ -374,7 +375,8 @@ const createStudentDefaulForms = true;
                 dataSheet['I2'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
                 dataSheet['J2'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
 
-                XLSX.writeFile(model, 'outputs/' + sheet + '/' + student.name + '.ods');
+                newSheet.Sheets['Dados'] = dataSheet;
+                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, type: 'file', cellHTML: true, dense: true, sheetStubs: true, });
             }
             console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
 
