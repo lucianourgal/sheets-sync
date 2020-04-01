@@ -1,4 +1,5 @@
 const XLSX = require('xlsx');
+const fs = require('fs');
 const utils = require('@stefancfuchs/utils');
 const natural = require('natural');
 const readlineSync = require('readline-sync');
@@ -73,6 +74,7 @@ const capStart = (str) => {
 
 
 // Main function starts here
+const createStudentDefaulForms = true;
 
 (async () => {
 
@@ -101,7 +103,7 @@ const capStart = (str) => {
     for (let sheet of sheetNames) {
 
         const acs = sheets[sheet];
-        const getVal = (acs, cell) => acs[cell] ? acs[cell].v : null;
+        const getVal = (acs, cell) => acs[cell] ? acs[cell].v : '';
 
         // find out which collumns has doc/RG, birth date and registy values
         let docCollumn = findCollumn(acs, 'RG', 'H');
@@ -182,159 +184,203 @@ const capStart = (str) => {
     // PART 2
     // Read student id cards spreadsheet
     //
+    if (!createStudentDefaulForms) {
 
-    const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
-    let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
+        console.log('Mode A active: Starting students id card infos completion');
+        const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
+        let idCardsSheet = idCardsAll.Sheets['Falta imprimir'];
 
-    let studentsIdsToPrintCount = 0;
-    let valuesFound = [];
-    const valuesToFind = [];
+        let studentsIdsToPrintCount = 0;
+        let valuesFound = [];
+        const valuesToFind = [];
 
-    let notFoundNames = [];
-    const didYouMean = [];
+        let notFoundNames = [];
+        const didYouMean = [];
 
-    for (let i = 4; i < 600; i++) {
+        for (let i = 4; i < 600; i++) {
 
-        const nameCell = idCardsSheet['B' + i];
+            const nameCell = idCardsSheet['B' + i];
 
-        if (nameCell && nameCell.v && nameCell.v.includes('-')) {
+            if (nameCell && nameCell.v && nameCell.v.includes('-')) {
 
-            const name = utils.accentFold(nameCell.v.toLowerCase().split('-')[0]).trim();
-            const tab = tagToTab(nameCell.v.split('-')[1]);
-            const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
-            //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab);
+                const name = utils.accentFold(nameCell.v.toLowerCase().split('-')[0]).trim();
+                const tab = tagToTab(nameCell.v.split('-')[1]);
+                const filteredStudents = tab ? students.filter(stu => stu.sheet === tab) : students;
+                //if(!filteredStudents.length) console.log(filteredStudents.length, 'tab filter', tab);
 
-            let rec = studenRecordOf(name, filteredStudents);
+                let rec = studenRecordOf(name, filteredStudents);
 
-            if (!rec) { // If no match was found using exact name match at expected tab, tries using all other tabs data
+                if (!rec) { // If no match was found using exact name match at expected tab, tries using all other tabs data
 
-                const maybeMatch = studenRecordOf(name, students); // Student match from unexpected course tab
+                    const maybeMatch = studenRecordOf(name, students); // Student match from unexpected course tab
 
-                if (maybeMatch) {
+                    if (maybeMatch) {
 
-                    // Asks user if it should use this match data
-                    const response = readlineSync.question("Use '" + maybeMatch.nameWithTab + "' info for '" + capStart(nameCell.v) + "'?  (Y/N)  __");
-                    if (response === 'y' || response === 'Y') {
-                        rec = maybeMatch;
-                        console.log('"' + capStart(nameCell.v) + '" info completed!\n');
-                    } else {
-                        console.log('"' + capStart(nameCell.v) + '" skipped\n');
-                    }
-                }
-            }
-
-            studentsIdsToPrintCount++;
-
-            const docCell = idCardsSheet['E' + i]; // This sheet has defined collumns since its controlled by me
-            const birthCell = idCardsSheet['F' + i];
-            const registerCell = idCardsSheet['G' + i];
-
-            // Completes data at local spreedsheet if data is missing and external spreedsheet has this data
-            if ((!docCell || !docCell.v || docCell.v.length < 5)) {
-                valuesToFind.push('doc');
-                if (rec && rec.doc) {
-                    idCardsSheet['E' + i] = { v: rec.doc, t: 's', w: rec.doc }
-                    valuesFound.push('doc');
-                }
-            }
-            if ((!birthCell || !birthCell.v)) {
-                valuesToFind.push('birth');
-                if (rec && rec.birth) {
-                    idCardsSheet['F' + i] = { v: rec.birth, t: 's', w: rec.birth }
-                    valuesFound.push('birth');
-                }
-            }
-            if (!registerCell || !registerCell.v || registerCell.v.length < 6) {
-                valuesToFind.push('register');
-                if (rec && rec.register) {
-                    idCardsSheet['G' + i] = { v: rec.register, t: 's', w: rec.register }
-                    valuesFound.push('register');
-                }
-            }
-
-            if (!rec) { // If no match was found for this student
-
-                const split = nameCell.v.split('-');
-
-                let invertedName = split.reverse().join(' - ');
-                notFoundNames.push(invertedName.trim());
-
-                /**
-                 * Finds register with the similar name in both local and external spredsheets (similar code of studenRecordOf)
-                 * @param name student to look for
-                 * @param students students array - maybe filtered by course, maybe active only, maybe inactive only
-                 * @returns string to inform this code user about possible match
-                 */
-                const findSimilarName = (fName, fStudents) => {
-                    const fSimilarName = stringSimilarToAny(fName, fStudents.map(cur => cur.name));
-                    let fSimilarCompleted = null;
-                    for (let s = 0; s < fStudents.length; s++) {
-                        if (fStudents[s].name === fSimilarName) {
-                            fSimilarCompleted = capStart(fStudents[s].nameUntreated) + '" - ' + fStudents[s].sheet;
+                        // Asks user if it should use this match data
+                        const response = readlineSync.question("Use '" + maybeMatch.nameWithTab + "' info for '" + capStart(nameCell.v) + "'?  (Y/N)  __");
+                        if (response === 'y' || response === 'Y') {
+                            rec = maybeMatch;
+                            console.log('"' + capStart(nameCell.v) + '" info completed!\n');
+                        } else {
+                            console.log('"' + capStart(nameCell.v) + '" skipped\n');
                         }
                     }
-                    return fSimilarCompleted;
                 }
 
-                let similarCompleted = findSimilarName(name, filteredStudents); // Looks for similar names at the same course
-                if (!similarCompleted) {
-                    similarCompleted = findSimilarName(name, students); // Looks for similar names between all courses
+                studentsIdsToPrintCount++;
+
+                const docCell = idCardsSheet['E' + i]; // This sheet has defined collumns since its controlled by me
+                const birthCell = idCardsSheet['F' + i];
+                const registerCell = idCardsSheet['G' + i];
+
+                // Completes data at local spreedsheet if data is missing and external spreedsheet has this data
+                if ((!docCell || !docCell.v || docCell.v.length < 5)) {
+                    valuesToFind.push('doc');
+                    if (rec && rec.doc) {
+                        idCardsSheet['E' + i] = { v: rec.doc, t: 's', w: rec.doc }
+                        valuesFound.push('doc');
+                    }
+                }
+                if ((!birthCell || !birthCell.v)) {
+                    valuesToFind.push('birth');
+                    if (rec && rec.birth) {
+                        idCardsSheet['F' + i] = { v: rec.birth, t: 's', w: rec.birth }
+                        valuesFound.push('birth');
+                    }
+                }
+                if (!registerCell || !registerCell.v || registerCell.v.length < 6) {
+                    valuesToFind.push('register');
+                    if (rec && rec.register) {
+                        idCardsSheet['G' + i] = { v: rec.register, t: 's', w: rec.register }
+                        valuesFound.push('register');
+                    }
                 }
 
-                didYouMean.push(similarCompleted);
+                if (!rec) { // If no match was found for this student
+
+                    const split = nameCell.v.split('-');
+
+                    let invertedName = split.reverse().join(' - ');
+                    notFoundNames.push(invertedName.trim());
+
+                    /**
+                     * Finds register with the similar name in both local and external spredsheets (similar code of studenRecordOf)
+                     * @param name student to look for
+                     * @param students students array - maybe filtered by course, maybe active only, maybe inactive only
+                     * @returns string to inform this code user about possible match
+                     */
+                    const findSimilarName = (fName, fStudents) => {
+                        const fSimilarName = stringSimilarToAny(fName, fStudents.map(cur => cur.name));
+                        let fSimilarCompleted = null;
+                        for (let s = 0; s < fStudents.length; s++) {
+                            if (fStudents[s].name === fSimilarName) {
+                                fSimilarCompleted = capStart(fStudents[s].nameUntreated) + '" - ' + fStudents[s].sheet;
+                            }
+                        }
+                        return fSimilarCompleted;
+                    }
+
+                    let similarCompleted = findSimilarName(name, filteredStudents); // Looks for similar names at the same course
+                    if (!similarCompleted) {
+                        similarCompleted = findSimilarName(name, students); // Looks for similar names between all courses
+                    }
+
+                    didYouMean.push(similarCompleted);
+                }
+
             }
 
         }
 
-    }
+        const notFoundCount = notFoundNames.length;
+        // Gives sugestions of matches, since it could be erros like typos,
+        // missing last names or students in different courses in each spreadsheet
+        notFoundNames = notFoundNames.map((cur, i) => {
+            let name = cur;
+            if (didYouMean[i]) {
+                name = name + '. Did you mean "' + didYouMean[i] + '?';
+            } else { // look in inactive students
+                const inactiveRecord = studenRecordOf(name, notActiveStudents);
+                if (inactiveRecord) {
+                    name = name + '. Status: ' + inactiveRecord.status + ' (' + inactiveRecord.sheet + ')';
+                }
+            }
+            return name;
+        });
+        notFoundNames = notFoundNames.sort();
 
-    const notFoundCount = notFoundNames.length;
-    // Gives sugestions of matches, since it could be erros like typos,
-    // missing last names or students in different courses in each spreadsheet
-    notFoundNames = notFoundNames.map((cur, i) => {
-        let name = cur;
-        if (didYouMean[i]) {
-            name = name + '. Did you mean "' + didYouMean[i] + '?';
-        } else { // look in inactive students
-            const inactiveRecord = studenRecordOf(name, notActiveStudents);
-            if (inactiveRecord) {
-                name = name + '. Status: ' + inactiveRecord.status + ' (' + inactiveRecord.sheet + ')';
+        if (notFoundCount) { // Prints not found cases to console
+            console.log();
+            for (let x = 0; x < notFoundCount; x++) {
+                console.log('Not found: ' + notFoundNames[x]);
             }
         }
-        return name;
-    });
-    notFoundNames = notFoundNames.sort();
 
-    if (notFoundCount) { // Prints not found cases to console
-        console.log();
-        for (let x = 0; x < notFoundCount; x++) {
-            console.log('Not found: ' + notFoundNames[x]);
+        const valuesToFindCount = valuesToFind.length;
+        const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
+        const regToFindCount = valuesToFind.filter(cur => cur === 'register').length;
+        const birthToFindCount = valuesToFind.filter(cur => cur === 'birth').length;
+
+        const valuesFoundCount = valuesFound.length;
+        const docFoundCount = valuesFound.filter(cur => cur === 'doc').length;
+        const regFoundCount = valuesFound.filter(cur => cur === 'register').length;
+        const birthFoundCount = valuesFound.filter(cur => cur === 'birth').length;
+
+        const foundCount = studentsIdsToPrintCount - notFoundCount;
+
+        console.log('\n' + studentsIdsToPrintCount + ' student records to print id cards, ' + foundCount + ' students found (' +
+            (100 * foundCount / studentsIdsToPrintCount).toFixed(1) + ' %), ' + notFoundCount + ' not found');
+        console.log(valuesToFindCount + ' values to be find. ' + valuesFoundCount +
+            ' (' + (100 * valuesFoundCount / valuesToFindCount).toFixed(1) + ' %) values found and completed\n');
+
+        console.log('Missing values count: \nDoc: ' + docToFindCount + '\nRegister: ' +
+            regToFindCount + '\nBirth: ' + birthToFindCount + '\n');
+        console.log('Found values count: \nDoc: ' + docFoundCount + '\nRegister: ' +
+            regFoundCount + '\nBirth: ' + birthFoundCount);
+
+        XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ COMPLETED.ods');
+
+    } else {
+
+        // Mooded part 2: Create Student spreadsheets
+        console.log('Mode B active: Generate students spreadSheets');
+
+        const selectedSheets = ['Aut 2020', 'MEC INT 2020',
+            'Adm2020', 'Cer 2020', 'Mec sub 2020',
+            'Eng Elet 2020', 'Agro Sup 2020'];
+        const model = XLSX.readFile('assets/Student default form.ods');
+        if (!fs.existsSync('outputs')) {
+            fs.mkdirSync('outputs');
         }
+
+        for (const sheet of selectedSheets) {
+
+            const classStudents = students.filter(std => std.sheet === sheet);
+            if (!fs.existsSync('outputs/' + sheet)) {
+                fs.mkdirSync('outputs/' + sheet);
+            }
+
+            for (const student of classStudents) {
+
+                const dataSheet = model.Sheets['Dados'];
+                dataSheet['A2'] = { v: student.name, t: 's', w: student.name } // name
+                dataSheet['B2'] = { v: student.birth, t: 's', w: student.birth } //birth
+                dataSheet['C2'] = { v: student.email, t: 's', w: student.email } //mail
+                dataSheet['D2'] = { v: student.phone1, t: 's', w: student.phone1 } //phone1
+                dataSheet['E2'] = { v: student.phone2, t: 's', w: student.phone2 } //phone2
+                dataSheet['F2'] = { v: student.phone3, t: 's', w: student.phone3 } // resp. cell phone
+                dataSheet['G2'] = { v: student.parent1, t: 's', w: student.parent1 } // parent1
+                dataSheet['H2'] = { v: student.parent2, t: 's', w: student.parent2 } // parent2
+                dataSheet['I2'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
+                dataSheet['J2'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
+
+                XLSX.writeFile(model, 'outputs/' + sheet + '/' + student.name + '.ods');
+            }
+            console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
+
+        }
+
     }
-
-    const valuesToFindCount = valuesToFind.length;
-    const docToFindCount = valuesToFind.filter(cur => cur === 'doc').length;
-    const regToFindCount = valuesToFind.filter(cur => cur === 'register').length;
-    const birthToFindCount = valuesToFind.filter(cur => cur === 'birth').length;
-
-    const valuesFoundCount = valuesFound.length;
-    const docFoundCount = valuesFound.filter(cur => cur === 'doc').length;
-    const regFoundCount = valuesFound.filter(cur => cur === 'register').length;
-    const birthFoundCount = valuesFound.filter(cur => cur === 'birth').length;
-
-    const foundCount = studentsIdsToPrintCount - notFoundCount;
-
-    console.log('\n' + studentsIdsToPrintCount + ' student records to print id cards, ' + foundCount + ' students found (' +
-        (100 * foundCount / studentsIdsToPrintCount).toFixed(1) + ' %), ' + notFoundCount + ' not found');
-    console.log(valuesToFindCount + ' values to be find. ' + valuesFoundCount +
-        ' (' + (100 * valuesFoundCount / valuesToFindCount).toFixed(1) + ' %) values found and completed\n');
-
-    console.log('Missing values count: \nDoc: ' + docToFindCount + '\nRegister: ' +
-        regToFindCount + '\nBirth: ' + birthToFindCount + '\n');
-    console.log('Found values count: \nDoc: ' + docFoundCount + '\nRegister: ' +
-        regFoundCount + '\nBirth: ' + birthFoundCount);
-
-    XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ COMPLETED.ods');
 
 })();
 
