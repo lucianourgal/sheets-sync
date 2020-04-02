@@ -344,11 +344,13 @@ const createStudentDefaulForms = true;
 
         // Mooded part 2: Create Student spreadsheets
         console.log('Mode B active: Generate students spreadSheets');
+        //const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms));  }
 
         const selectedSheets = ['Aut 2020', 'MEC INT 2020',
             'Adm2020', 'Cer 2020', 'Mec sub 2020',
             'Eng Elet 2020', 'Agro Sup 2020'];
-        const model = XLSX.readFile('assets/Student default form.xlsx', { cellStyles: true, type: 'file', cellHTML: true, dense: true, sheetStubs: true, });
+
+        const model = XLSX.readFile('assets/Student default form.xlsx', { cellStyles: true,  sheetStubs: true, });
         if (!fs.existsSync('outputs')) {
             fs.mkdirSync('outputs');
         }
@@ -362,21 +364,23 @@ const createStudentDefaulForms = true;
 
             for (const student of classStudents) {
 
-                const newSheet = {...model};
+                const newSheet = model;
                 const dataSheet = newSheet.Sheets['Dados'];
-                dataSheet['A2'] = { v: student.name, w: student.name } // name
+                //console.log(dataSheet.)
+                dataSheet['A2'] = { v: capStart(student.name), w: capStart(student.name) } // name
                 dataSheet['B2'] = { v: student.birth, t: 's', w: student.birth } //birth
                 dataSheet['C2'] = { v: student.email, t: 's', w: student.email } //mail
                 dataSheet['D2'] = { v: student.phone1, t: 's', w: student.phone1 } //phone1
                 dataSheet['E2'] = { v: student.phone2, t: 's', w: student.phone2 } //phone2
                 dataSheet['F2'] = { v: student.phone3, t: 's', w: student.phone3 } // resp. cell phone
-                dataSheet['G2'] = { v: student.parent1, t: 's', w: student.parent1 } // parent1
-                dataSheet['H2'] = { v: student.parent2, t: 's', w: student.parent2 } // parent2
+                dataSheet['G2'] = { v: capStart(student.parent1), t: 's', w: capStart(student.parent1) } // parent1
+                dataSheet['H2'] = { v: capStart(student.parent2), t: 's', w: capStart(student.parent2) } // parent2
                 dataSheet['I2'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
                 dataSheet['J2'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
 
                 newSheet.Sheets['Dados'] = dataSheet;
-                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, type: 'file', sheetStubs: true, });
+                //await sleep(600);
+                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, sheetStubs: true, });
             }
             console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
 
