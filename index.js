@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const XLSX = require('@sheet/editdemo');
 const fs = require('fs');
 const utils = require('@stefancfuchs/utils');
 const natural = require('natural');
@@ -362,9 +362,9 @@ const createStudentDefaulForms = true;
 
             for (const student of classStudents) {
 
-                const newSheet = { ...model };
+                const newSheet = {...model};
                 const dataSheet = newSheet.Sheets['Dados'];
-                dataSheet['A2'] = { v: student.name, t: 's', w: student.name } // name
+                dataSheet['A2'] = { v: student.name, w: student.name } // name
                 dataSheet['B2'] = { v: student.birth, t: 's', w: student.birth } //birth
                 dataSheet['C2'] = { v: student.email, t: 's', w: student.email } //mail
                 dataSheet['D2'] = { v: student.phone1, t: 's', w: student.phone1 } //phone1
@@ -376,7 +376,7 @@ const createStudentDefaulForms = true;
                 dataSheet['J2'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
 
                 newSheet.Sheets['Dados'] = dataSheet;
-                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, type: 'file', cellHTML: true, dense: true, sheetStubs: true, });
+                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, type: 'file', sheetStubs: true, });
             }
             console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
 

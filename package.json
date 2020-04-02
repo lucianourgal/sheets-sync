@@ -4,6 +4,7 @@
   "description": "Syncronizes infos in csv using data from a ods file",
   "main": "index.js",
   "dependencies": {
+    "@sheet/editdemo": "^1.20200309.1",
     "@stefancfuchs/utils": "^1.0.8",
     "natural": "^0.6.3",
     "readline-sync": "^1.4.10",
