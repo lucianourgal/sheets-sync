@@ -74,7 +74,7 @@ const capStart = (str) => {
 
 
 // Main function starts here
-const createStudentDefaulForms = true;
+const createStudentDefaulForms = false; // changes code purpose
 
 (async () => {
 
