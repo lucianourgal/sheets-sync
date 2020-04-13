@@ -65,7 +65,7 @@ const tagToTab = (tag) => {
  * @param str initial string
  */
 const capStart = (str) => {
-    if(!str) return str;
+    if (!str) return str;
     const split = str.split ? str.split(' ') : str;
     for (let p = 0; p < split.length; p++) {
         split[p] = split[p].slice(0, 1).toUpperCase() + split[p].slice(1).toLowerCase();
@@ -354,47 +354,48 @@ const createStudentDefaulForms = true;
             'Eng Elet 2020', 'Agro Sup 2020'];
 
         const toCourseName = (str) => {
-            if(str === 'Aut 2020') return 'Técnico Integrado em Automação - 2020';
-            if(str === 'MEC INT 2020') return 'Técnico Integrado em Mecânica - 2020';
-            if(str === 'Adm2020') return 'Técnico Subsequente em Adminsitração - 2020';
-            if(str === 'Adm 2020 -PROEJA') return 'Técnico PROEJA, Administração - 2020';
-            if(str === 'Cer 2020') return 'Técnico Subsequente em Cerâmica - 2020';
-            if(str === 'Mec Sub 2020') return 'Técnico Subsequente em Mecânica - 2020';
+            if (str === 'Aut 2020') return 'Técnico Integrado em Automação - 2020';
+            if (str === 'MEC INT 2020') return 'Técnico Integrado em Mecânica - 2020';
+            if (str === 'Adm2020') return 'Técnico Subsequente em Adminsitração - 2020';
+            if (str === 'Adm 2020 -PROEJA') return 'Técnico PROEJA, Administração - 2020';
+            if (str === 'Cer 2020') return 'Técnico Subsequente em Cerâmica - 2020';
+            if (str === 'Mec sub 2020') return 'Técnico Subsequente em Mecânica - 2020';
 
-            if(str === 'Eng Elet 2020') return 'Engenharia Elétrica - 2020';
-            if(str === 'Agro Sup 2020') return 'Tecnologia em Agroecologia - 2020';
-            
+            if (str === 'Eng Elet 2020') return 'Engenharia Elétrica - 2020';
+            if (str === 'Agro Sup 2020') return 'Tecnologia em Agroecologia - 2020';
+
 
             return str;
         }
 
 
-        const model = XLSX.readFile('assets/Modelo Ficha Individual Acadêmica.xlsx', { cellStyles: true,  sheetStubs: true, });
+        const model = XLSX.readFile('assets/Modelo Ficha Individual Acadêmica.xlsx', { cellStyles: true, sheetStubs: true, });
         if (!fs.existsSync('outputs')) {
             fs.mkdirSync('outputs');
         }
 
         for (const sheet of selectedSheets) {
 
+            const className = toCourseName(sheet);
             const classStudents = students.filter(std => std.sheet === sheet);
-            if (!fs.existsSync('outputs/' + sheet)) {
-                fs.mkdirSync('outputs/' + sheet);
+            if (!fs.existsSync('outputs/' + className)) {
+                fs.mkdirSync('outputs/' + className);
             }
 
             for (const student of classStudents) {
 
                 const newSheet = model;
                 const dataSheet = newSheet.Sheets['Informações pessoais'];
-                
+
                 // personal data
                 dataSheet['C9'] = { v: capStart(student.name), w: capStart(student.name) } // name
                 dataSheet['C10'] = { v: capStart(student.register), w: capStart(student.register) } // register
                 dataSheet['C11'] = { v: student.birth, t: 's', w: student.birth } //birth
                 dataSheet['C14'] = { v: student.cpf, t: 's', w: student.cpf } // cpf
                 dataSheet['C15'] = { v: student.doc, t: 's', w: student.doc } // rg
-                
+
                 // academic infos
-                dataSheet['C18'] = { v: student.sheet, t: 's', w: student.sheet } // class
+                dataSheet['C18'] = { v: toCourseName(student.sheet), t: 's', w: toCourseName(student.sheet) } // class
 
                 // contact forms
                 dataSheet['C26'] = { v: student.email, t: 's', w: student.email } //mail
@@ -410,11 +411,11 @@ const createStudentDefaulForms = true;
                 dataSheet['C36'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
                 dataSheet['C37'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
 
-                newSheet.Sheets['Dados'] = dataSheet;
+                newSheet.Sheets['Informações pessoais'] = dataSheet;
                 //await sleep(600);
-                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + capStart(student.nameUntreated) + '.xlsx', { cellStyles: true, sheetStubs: true, });
+                XLSX.writeFile(newSheet, 'outputs/' + className + '/' + capStart(student.nameUntreated) + ' - ' + sheet + '.xlsx', { cellStyles: true, sheetStubs: true, });
             }
-            console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
+            console.log('Class ' + className + ': ' + classStudents.length + ' spreadsheets saved');
 
         }
 
