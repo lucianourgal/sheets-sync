@@ -374,6 +374,7 @@ const createStudentDefaulForms = true;
             fs.mkdirSync('outputs');
         }
 
+        let total = 0;
         for (const sheet of selectedSheets) {
 
             const className = toCourseName(sheet);
@@ -416,9 +417,10 @@ const createStudentDefaulForms = true;
                 XLSX.writeFile(newSheet, 'outputs/' + className + '/' + capStart(student.nameUntreated) + ' - ' + sheet + '.xlsx', { cellStyles: true, sheetStubs: true, });
             }
             console.log('Class ' + className + ': ' + classStudents.length + ' spreadsheets saved');
-
+            total = total + classStudents.length;
         }
 
+        console.log('Total of ' + total + ' spreadsheets generated');
     }
 
 })();
