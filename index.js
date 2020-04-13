@@ -65,11 +65,12 @@ const tagToTab = (tag) => {
  * @param str initial string
  */
 const capStart = (str) => {
-    const split = str.split(' ');
+    if(!str) return str;
+    const split = str.split ? str.split(' ') : str;
     for (let p = 0; p < split.length; p++) {
         split[p] = split[p].slice(0, 1).toUpperCase() + split[p].slice(1).toLowerCase();
     }
-    return split.join(' ');
+    return split.join ? split.join(' ') : split;
 }
 
 
@@ -109,6 +110,7 @@ const createStudentDefaulForms = true;
         let docCollumn = findCollumn(acs, 'RG', 'H');
         let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
         let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
+        let cpfCollumn = findCollumn(acs, 'CPF', 'G');
 
         let mailCollumn = findCollumn(acs, 'E-MAIL', 'J');
         let phone1Collumn = findCollumn(acs, 'TELEFONE 1', 'K');
@@ -131,6 +133,7 @@ const createStudentDefaulForms = true;
                 const name = utils.accentFold(nameCell.v).toLowerCase().trim();
                 const register = getVal(acs, regCollumn + i);
                 const doc = getVal(acs, docCollumn + i);
+                const cpf = getVal(acs, cpfCollumn + i);
                 const status = statusCell && statusCell.v;
                 let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
                 if (acs[birthCollumn + i] && !birth.includes('/')) {
@@ -147,7 +150,7 @@ const createStudentDefaulForms = true;
 
                 const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
                 const newStudent = {
-                    name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab,
+                    name, register, birth, doc, cpf, sheet, nameUntreated: nameCell.v, status, nameWithTab,
                     email, phone1, phone2, phone3, parent1, parent2, entranceAt, entranceKind
                 }; // Creates student object
 
@@ -347,10 +350,26 @@ const createStudentDefaulForms = true;
         //const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms));  }
 
         const selectedSheets = ['Aut 2020', 'MEC INT 2020',
-            'Adm2020', 'Cer 2020', 'Mec sub 2020',
+            'Adm2020', 'Adm 2020 -PROEJA', 'Cer 2020', 'Mec sub 2020',
             'Eng Elet 2020', 'Agro Sup 2020'];
 
-        const model = XLSX.readFile('assets/Student default form.xlsx', { cellStyles: true,  sheetStubs: true, });
+        const toCourseName = (str) => {
+            if(str === 'Aut 2020') return 'Técnico Integrado em Automação - 2020';
+            if(str === 'MEC INT 2020') return 'Técnico Integrado em Mecânica - 2020';
+            if(str === 'Adm2020') return 'Técnico Subsequente em Adminsitração - 2020';
+            if(str === 'Adm 2020 -PROEJA') return 'Técnico PROEJA, Administração - 2020';
+            if(str === 'Cer 2020') return 'Técnico Subsequente em Cerâmica - 2020';
+            if(str === 'Mec Sub 2020') return 'Técnico Subsequente em Mecânica - 2020';
+
+            if(str === 'Eng Elet 2020') return 'Engenharia Elétrica - 2020';
+            if(str === 'Agro Sup 2020') return 'Tecnologia em Agroecologia - 2020';
+            
+
+            return str;
+        }
+
+
+        const model = XLSX.readFile('assets/Modelo Ficha Individual Acadêmica.xlsx', { cellStyles: true,  sheetStubs: true, });
         if (!fs.existsSync('outputs')) {
             fs.mkdirSync('outputs');
         }
@@ -365,22 +384,35 @@ const createStudentDefaulForms = true;
             for (const student of classStudents) {
 
                 const newSheet = model;
-                const dataSheet = newSheet.Sheets['Dados'];
-                //console.log(dataSheet.)
-                dataSheet['A2'] = { v: capStart(student.name), w: capStart(student.name) } // name
-                dataSheet['B2'] = { v: student.birth, t: 's', w: student.birth } //birth
-                dataSheet['C2'] = { v: student.email, t: 's', w: student.email } //mail
-                dataSheet['D2'] = { v: student.phone1, t: 's', w: student.phone1 } //phone1
-                dataSheet['E2'] = { v: student.phone2, t: 's', w: student.phone2 } //phone2
-                dataSheet['F2'] = { v: student.phone3, t: 's', w: student.phone3 } // resp. cell phone
-                dataSheet['G2'] = { v: capStart(student.parent1), t: 's', w: capStart(student.parent1) } // parent1
-                dataSheet['H2'] = { v: capStart(student.parent2), t: 's', w: capStart(student.parent2) } // parent2
-                dataSheet['I2'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
-                dataSheet['J2'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
+                const dataSheet = newSheet.Sheets['Informações pessoais'];
+                
+                // personal data
+                dataSheet['C9'] = { v: capStart(student.name), w: capStart(student.name) } // name
+                dataSheet['C10'] = { v: capStart(student.register), w: capStart(student.register) } // register
+                dataSheet['C11'] = { v: student.birth, t: 's', w: student.birth } //birth
+                dataSheet['C14'] = { v: student.cpf, t: 's', w: student.cpf } // cpf
+                dataSheet['C15'] = { v: student.doc, t: 's', w: student.doc } // rg
+                
+                // academic infos
+                dataSheet['C18'] = { v: student.sheet, t: 's', w: student.sheet } // class
+
+                // contact forms
+                dataSheet['C26'] = { v: student.email, t: 's', w: student.email } //mail
+                dataSheet['C27'] = { v: student.phone1, t: 's', w: student.phone1 } //phone1
+                dataSheet['C28'] = { v: student.phone2, t: 's', w: student.phone2 } //phone2
+
+                // parents (minors only)
+                dataSheet['C33'] = { v: student.phone3, t: 's', w: student.phone3 } // resp. cell phone
+                dataSheet['C31'] = { v: capStart(student.parent1), t: 's', w: capStart(student.parent1) } // parent1
+                dataSheet['C32'] = { v: capStart(student.parent2), t: 's', w: capStart(student.parent2) } // parent2
+
+                // entry type
+                dataSheet['C36'] = { v: student.entranceAt, t: 's', w: student.entranceAt } // entry time
+                dataSheet['C37'] = { v: student.entranceKind, t: 's', w: student.entranceKind } // entry type
 
                 newSheet.Sheets['Dados'] = dataSheet;
                 //await sleep(600);
-                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + student.nameUntreated + '.xlsx', { cellStyles: true, sheetStubs: true, });
+                XLSX.writeFile(newSheet, 'outputs/' + sheet + '/' + capStart(student.nameUntreated) + '.xlsx', { cellStyles: true, sheetStubs: true, });
             }
             console.log('Class ' + sheet + ': ' + classStudents.length + ' spreadsheets saved');
 
