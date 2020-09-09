@@ -4,6 +4,9 @@ const utils = require('@stefancfuchs/utils');
 const natural = require('natural');
 const readlineSync = require('readline-sync');
 
+
+const mode = 'sheetsCompare'  // 'createSheets' | 'cardsCompletion' | 'sheetsCompare'
+
 /**
  * Giver a reference string and a array of strings, returns the string from arr which is more similar to the reference string
  * @param input reference string
@@ -73,96 +76,104 @@ const capStart = (str) => {
 }
 
 
-// Main function starts here
-const createStudentDefaulForms = false; // changes code purpose
-
 (async () => {
 
     // Read student records spreadSheet (external spredsheet)
-    const studentRecords = XLSX.readFile('assets/HISTÓRICO E CONTATO ALUNOS ATIVOS.ods');
-    const sheetNames = studentRecords.SheetNames;
-    const sheets = studentRecords.Sheets;
 
-    const students = [];
-    const notActiveStudents = [];
+    const readSecacSpreadSheet = (name) => {
 
-    const findCollumn = (acs, name, defaultColummn) => {
-        const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
-        let c = defaultColummn;
-        for (let l = 0; l < letters.length; l++) {
-            const check = letters[l];
-            if (acs[check + '2'] && acs[check + '2'].v === name) {
-                c = check;
-            }
-        }
-        return c;
-    }
+        const studentRecords = XLSX.readFile(name);
+        const sheetNames = studentRecords.SheetNames;
+        const sheets = studentRecords.Sheets;
 
-    console.log(sheetNames.length + ' sheets in students records spreadsheet');
+        const students = [];
+        const notActiveStudents = [];
 
-    for (let sheet of sheetNames) {
-
-        const acs = sheets[sheet];
-        const getVal = (acs, cell) => acs[cell] ? acs[cell].v : '';
-
-        // find out which collumns has doc/RG, birth date and registy values
-        let docCollumn = findCollumn(acs, 'RG', 'H');
-        let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
-        let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
-
-        let mailCollumn = findCollumn(acs, 'E-MAIL', 'J');
-        let phone1Collumn = findCollumn(acs, 'TELEFONE 1', 'K');
-        let phone2Collumn = findCollumn(acs, 'TELEFONE 2', 'L');
-        let phone3Collumn = findCollumn(acs, 'CEL. RESPONSÁVEL', 'M');
-        let parent1Collumn = findCollumn(acs, 'MÃE', 'N');
-        let parent2Collumn = findCollumn(acs, 'PAI', 'O');
-        let entranceAtCollumn = findCollumn(acs, 'CHAMADA', 'P');
-        let entranceKindCollumn = findCollumn(acs, 'COTA', 'Q');
-
-        //console.log(sheet, docCollumn, birthCollumn, regCollumn);
-
-        for (let i = 3; i < 50; i++) {
-
-            const nameCell = acs['B' + i];
-            const statusCell = acs['C' + i];
-
-            if (nameCell && nameCell.v) { // if this line has text at the name collumn
-
-                const name = utils.accentFold(nameCell.v).toLowerCase().trim();
-                const register = getVal(acs, regCollumn + i);
-                const doc = getVal(acs, docCollumn + i);
-                const status = statusCell && statusCell.v;
-                let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
-                if (acs[birthCollumn + i] && !birth.includes('/')) {
-                    birth = new Date(acs[birthCollumn + i].w);
-                }
-                const email = getVal(acs, mailCollumn + i);
-                const phone1 = getVal(acs, phone1Collumn + i);
-                const phone2 = getVal(acs, phone2Collumn + i);
-                const phone3 = getVal(acs, phone3Collumn + i);
-                const parent1 = getVal(acs, parent1Collumn + i);
-                const parent2 = getVal(acs, parent2Collumn + i);
-                const entranceAt = getVal(acs, entranceAtCollumn + i);
-                const entranceKind = getVal(acs, entranceKindCollumn + i);
-
-                const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
-                const newStudent = {
-                    name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab,
-                    email, phone1, phone2, phone3, parent1, parent2, entranceAt, entranceKind
-                }; // Creates student object
-
-                if (status === 'ATIVO' ||
-                    nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at external .ods file
-
-                    students.push(newStudent); // Active students only
-                } else {
-                    notActiveStudents.push(newStudent); // It can be a student of not "ATIVO" status
+        const findCollumn = (acs, name, defaultColummn) => {
+            const letters = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
+            let c = defaultColummn;
+            for (let l = 0; l < letters.length; l++) {
+                const check = letters[l];
+                if (acs[check + '2'] && acs[check + '2'].v === name) {
+                    c = check;
                 }
             }
+            return c;
         }
+
+        console.log(sheetNames.length + ' sheets in students records spreadsheet');
+
+        for (let sheet of sheetNames) {
+
+            const acs = sheets[sheet];
+            const getVal = (acs, cell) => acs[cell] ? acs[cell].v : '';
+
+            // find out which collumns has doc/RG, birth date and registy values
+            let docCollumn = findCollumn(acs, 'RG', 'H');
+            let birthCollumn = findCollumn(acs, 'NASCIMENTO', 'F');
+            let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
+
+            let mailCollumn = findCollumn(acs, 'E-MAIL', 'J');
+            let phone1Collumn = findCollumn(acs, 'TELEFONE 1', 'K');
+            let phone2Collumn = findCollumn(acs, 'TELEFONE 2', 'L');
+            let phone3Collumn = findCollumn(acs, 'CEL. RESPONSÁVEL', 'M');
+            let parent1Collumn = findCollumn(acs, 'MÃE', 'N');
+            let parent2Collumn = findCollumn(acs, 'PAI', 'O');
+            let entranceAtCollumn = findCollumn(acs, 'CHAMADA', 'P');
+            let entranceKindCollumn = findCollumn(acs, 'COTA', 'Q');
+
+            //console.log(sheet, docCollumn, birthCollumn, regCollumn);
+
+            for (let i = 3; i < 50; i++) {
+
+                const nameCell = acs['B' + i];
+                const statusCell = acs['C' + i];
+
+                if (nameCell && nameCell.v) { // if this line has text at the name collumn
+
+                    const name = utils.accentFold(nameCell.v).toLowerCase().trim();
+                    const register = getVal(acs, regCollumn + i);
+                    const doc = getVal(acs, docCollumn + i);
+                    const status = statusCell && statusCell.v;
+                    let birth = acs[birthCollumn + i] ? acs[birthCollumn + i].w : null;
+                    if (acs[birthCollumn + i] && !birth.includes('/')) {
+                        birth = new Date(acs[birthCollumn + i].w);
+                    }
+                    const email = getVal(acs, mailCollumn + i);
+                    const phone1 = getVal(acs, phone1Collumn + i);
+                    const phone2 = getVal(acs, phone2Collumn + i);
+                    const phone3 = getVal(acs, phone3Collumn + i);
+                    const parent1 = getVal(acs, parent1Collumn + i);
+                    const parent2 = getVal(acs, parent2Collumn + i);
+                    const entranceAt = getVal(acs, entranceAtCollumn + i);
+                    const entranceKind = getVal(acs, entranceKindCollumn + i);
+
+                    const nameWithTab = capStart(nameCell.v) + '" - ' + sheet;
+                    const newStudent = {
+                        name, register, birth, doc, sheet, nameUntreated: nameCell.v, status, nameWithTab,
+                        email, phone1, phone2, phone3, parent1, parent2, entranceAt, entranceKind
+                    }; // Creates student object
+
+                    const notStudentNames = ['Abandonos', 'Transferencias', 'Transferências', 'Trancamentos', 'Concluintes']
+                    if (status === 'ATIVO' ||
+                        nameCell && !status && (sheet === 'Mat 2020' || sheet === 'Eng Elet 2020')) { // Temp fix due incomplete tabs at external .ods file
+
+                        if (!notStudentNames.includes(newStudent.nameUntreated))
+                            students.push(newStudent); // Active students only
+                    } else {
+                        notActiveStudents.push(newStudent); // It can be a student of not "ATIVO" status
+                    }
+                }
+            }
+        }
+
+        console.log(students.length + ' active student records found at records spreadsheet ' + name + '\n');
+        return { students, notActiveStudents }
     }
 
-    console.log(students.length + ' active student records found at records spreadsheet\n');
+    const res = readSecacSpreadSheet('assets/HISTÓRICO E CONTATO ALUNOS ATIVOS 08092020.ods');
+    const { students, notActiveStudents } = res;
+
     // console.log(notActiveStudents.length + ' possible students records');
 
     /**
@@ -184,7 +195,7 @@ const createStudentDefaulForms = false; // changes code purpose
     // PART 2
     // Read student id cards spreadsheet
     //
-    if (!createStudentDefaulForms) {
+    if (mode === 'cardsCompletion') {
 
         console.log('Mode A active: Starting students id card infos completion');
         const idCardsAll = XLSX.readFile('assets/Controle fotos carteiras estudantis _ carteirinhas de estudante  2020.ods');
@@ -340,7 +351,7 @@ const createStudentDefaulForms = false; // changes code purpose
 
         XLSX.writeFile(idCardsAll, 'assets/Controle fotos carteiras estudantis _ carteirinhas de estudante __ COMPLETED.ods');
 
-    } else {
+    } else if (mode === 'createSheets') {
 
         // Mooded part 2: Create Student spreadsheets
         console.log('Mode B active: Generate students spreadSheets');
@@ -382,11 +393,77 @@ const createStudentDefaulForms = false; // changes code purpose
 
         }
 
+    } else {
+
+        const old = readSecacSpreadSheet('assets/HISTÓRICO E CONTATO ALUNOS ATIVOS 13042020.ods');
+
+        // finds students that were active at old sheet, but aren't active now
+        let nowInactiveList = [];
+        for (const inactiveStudent of notActiveStudents) {
+            if (inactiveStudent.sheet !== 'Quantitativo' && !old.notActiveStudents.some(student => student.doc === inactiveStudent.doc)) { // he/she wasn't inactive before
+                nowInactiveList.push(inactiveStudent);
+            }
+        }
+        console.log(nowInactiveList.length + ' estudantes se tornaram inativos:');
+        const nowInactiveNames = nowInactiveList.map(std => {
+             return capStart(std.name) + ' (' + std.sheet + ')';
+        });
+
+        const countNumbers = (str) => {
+            if (!str) return 0;
+            const numbs = [0, 1, 2, 4, 3, 6, 5, 7, 9, 8].map(cur => String(cur));
+            const arr = String(str).split();
+            const ns = arr.filter(c => numbs.includes(c));
+            return ns.length;
+        }
+        console.log(nowInactiveNames.join('\n')+'\n\n');
+
+
+        // Compares old students data to new data
+        const changesArr = [];
+        const fieldsToCheck = ['email', 'birth'];
+        for (const student of students) {
+            const match = old.students.find(cur => (cur.doc && cur.doc === student.doc && cur.sheet === student.sheet) || // find by doc
+                (!cur.doc && cur.sheet === student.sheet && cur.nameUntreated === student.nameUntreated)); // if doc is not available
+            if (match) {
+                let difs = '';
+
+                const changes = fieldsToCheck.map(field => {
+                    if (student[field] !== match[field]) {
+                        if (field === 'name') { //  && student[field].toLowerCase() === match[field].toLowerCase()
+                            console.log(student[field], 'X', match[field]);
+                            //return null;
+                        }
+
+                        return field + ': ' + student[field];
+                    }
+                    return null;
+                }).filter(el => !!el);
+                difs = changes.join(', ');
+
+                // check phones
+                const oldP = [match.phone1, match.phone2, match.phone3]
+                    .filter(el => !!el && countNumbers(el) > 7).sort((a, b) => a - b).join(', ');
+                const newP = [student.phone1, student.phone2, student.phone3]
+                    .filter(el => !!el && countNumbers(el) > 7).sort((a, b) => a - b).join(', ');
+                if (oldP !== newP) {
+                    console.log(oldP, newP)
+                    const str = 'phones: ' + newP;
+                    difs = difs ? difs + ', ' + str : str;
+                }
+
+                if (difs) {
+                    //console.log(student.name, difs)
+                    changesArr.push(capStart(student.name) + ' (' + student.sheet + '): ' + difs);
+                }
+            }
+        }
+        console.log('\nMudanças em dados de ' + changesArr.length + ' estudantes');
+        console.log(changesArr.join('\n'));
+
     }
 
 })();
-
-
 
 /* Student cards spreedsheet
 Names: B4 - B?
