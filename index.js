@@ -114,9 +114,9 @@ const capStart = (str) => {
             let regCollumn = findCollumn(acs, 'MATRÍCULA', 'D');
 
             let mailCollumn = findCollumn(acs, 'E-MAIL', 'J');
-            let phone1Collumn = findCollumn(acs, 'TELEFONE 1', 'K');
-            let phone2Collumn = findCollumn(acs, 'TELEFONE 2', 'L');
-            let phone3Collumn = findCollumn(acs, 'CEL. RESPONSÁVEL', 'M');
+            let phone1Collumn = findCollumn(acs, 'TELEFONE 1', findCollumn(acs, 'TEL. FIXO', 'K'));
+            let phone2Collumn = findCollumn(acs, 'TELEFONE 2', findCollumn(acs, 'CELULAR', 'L'));
+            let phone3Collumn = findCollumn(acs, 'CEL. RESPONSÁVEL', findCollumn(acs, 'CEL. RESPONSÁVEL', 'M'));
             let parent1Collumn = findCollumn(acs, 'MÃE', 'N');
             let parent2Collumn = findCollumn(acs, 'PAI', 'O');
             let entranceAtCollumn = findCollumn(acs, 'CHAMADA', 'P');
@@ -406,7 +406,7 @@ const capStart = (str) => {
         }
         console.log(nowInactiveList.length + ' estudantes se tornaram inativos:');
         const nowInactiveNames = nowInactiveList.map(std => {
-             return capStart(std.name) + ' (' + std.sheet + ')';
+            return capStart(std.name) + ' (' + std.sheet + ')';
         });
 
         const countNumbers = (str) => {
@@ -415,12 +415,13 @@ const capStart = (str) => {
             const ns = arr.filter(c => parseInt(c) || parseInt(c) === 0);
             return ns.length;
         }
-        console.log(nowInactiveNames.join('\n')+'\n\n');
+        console.log(nowInactiveNames.join('\n') + '\n');
 
 
         // Compares old students data to new data
         const changesArr = [];
-        const fieldsToCheck = ['email', 'birth'];
+        const fieldsToCheck = ['email',];
+        let noMatchCount = 0;
         for (const student of students) {
             const match = old.students.find(cur => (cur.doc && cur.doc === student.doc && cur.sheet === student.sheet) || // find by doc
                 (!cur.doc && cur.sheet === student.sheet && cur.nameUntreated === student.nameUntreated)); // if doc is not available
@@ -441,20 +442,35 @@ const capStart = (str) => {
                 difs = changes.join(', ');
 
                 // check phones
-                const oldP = [match.phone1, match.phone2, match.phone3]
-                    .filter(el => !!el && countNumbers(el) > 7).sort((a,b) => a - b).join(', ');
-                const newP = [student.phone1, student.phone2, student.phone3]
-                    .filter(el => !!el && countNumbers(el) > 7).sort((a,b) => a - b).join(', ');
+                const oldPArr = [match.phone1, match.phone2, match.phone3]
+                    .filter(el => !!el && countNumbers(el) > 7)
+                const oldP = oldPArr.sort((a, b) => a - b).join(', ');
+                const newPArr = [student.phone1, student.phone2, student.phone3]
+                    .filter(el => !!el && countNumbers(el) > 7)
+                const newP = newPArr.sort((a, b) => a - b).join(', ');
                 if (oldP !== newP) {
                     //console.log(oldP, newP)
-                    const str = 'phones: ' + newP;
-                    difs = difs ? difs + ', ' + str : str;
+
+                    // check new phones
+                    const isNewArr = newPArr.filter(newps => !oldPArr.includes(newps));
+                    // Check removed phones
+                    const isRemovedArr = oldPArr.filter(newps => !newPArr.includes(newps));
+
+                    const str = 'Telefones: ' +
+                        (isNewArr.length ? 'Add ' + isNewArr.join(', ') + '; ' : '') +
+                        (isRemovedArr.length ? 'Del ' + isRemovedArr.join(', ') + '; ' : '');
+
+                    if (isNewArr.length || isRemovedArr.length) {
+                        difs = difs ? difs + ', ' + str : str;
+                    }
                 }
 
                 if (difs) {
                     //console.log(student.name, difs)
                     changesArr.push(capStart(student.name) + ' (' + student.sheet + '): ' + difs);
                 }
+            } else {
+                noMatchCount++;
             }
         }
         console.log('\nMudanças em dados de ' + changesArr.length + ' estudantes');
