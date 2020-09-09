@@ -411,9 +411,8 @@ const capStart = (str) => {
 
         const countNumbers = (str) => {
             if (!str) return 0;
-            const numbs = [0, 1, 2, 4, 3, 6, 5, 7, 9, 8].map(cur => String(cur));
-            const arr = String(str).split();
-            const ns = arr.filter(c => numbs.includes(c));
+            const arr = String(str).split('');
+            const ns = arr.filter(c => parseInt(c) || parseInt(c) === 0);
             return ns.length;
         }
         console.log(nowInactiveNames.join('\n')+'\n\n');
@@ -443,11 +442,11 @@ const capStart = (str) => {
 
                 // check phones
                 const oldP = [match.phone1, match.phone2, match.phone3]
-                    .filter(el => !!el && countNumbers(el) > 7).sort((a, b) => a - b).join(', ');
+                    .filter(el => !!el && countNumbers(el) > 7).sort((a,b) => a - b).join(', ');
                 const newP = [student.phone1, student.phone2, student.phone3]
-                    .filter(el => !!el && countNumbers(el) > 7).sort((a, b) => a - b).join(', ');
+                    .filter(el => !!el && countNumbers(el) > 7).sort((a,b) => a - b).join(', ');
                 if (oldP !== newP) {
-                    console.log(oldP, newP)
+                    //console.log(oldP, newP)
                     const str = 'phones: ' + newP;
                     difs = difs ? difs + ', ' + str : str;
                 }
