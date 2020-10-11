@@ -19,7 +19,7 @@ https://www.npmjs.com/package/readline-sync <br>
 # Main purpose of this project
 - This project was created in order to be used alongside two projects, in a defined order <br>
 
-# Main puporse steps 
+# Main purpose steps 
 - Take pictures of students and keep files with its original names <br>
 - Have a spreedsheet #1 relating DSC number and "Student Name - $COURSE_$YEAR" <br>
 - Use [sheets-sync](https://github.com/lucianourgal/sheets-sync) to complete spreedsheet #1 infos using the students spreedsheet provided by the academic secretariat <br>
