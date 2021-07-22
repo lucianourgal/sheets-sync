@@ -7,7 +7,7 @@
     "@stefancfuchs/utils": "^1.0.8",
     "natural": "^0.6.3",
     "readline-sync": "^1.4.10",
-    "xlsx": "^0.15.5"
+    "xlsx": "^0.17.0"
   },
   "devDependencies": {},
   "scripts": {
